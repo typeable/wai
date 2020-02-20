@@ -55,7 +55,7 @@ socketConnection :: Socket -> IO Connection
 socketConnection s = do
     bufferPool <- newBufferPool
     writeBuf <- allocateBuffer bufferSize
-    let sendall = Sock.sendAll s
+    let sendall = sendAll' s
     return Connection {
         connSendMany = Sock.sendMany s
       , connSendAll = sendall
@@ -67,6 +67,9 @@ socketConnection s = do
       , connWriteBuffer = writeBuf
       , connBufferSize = bufferSize
       }
+  where
+    sendAll' sock bs = Sock.sendAll sock bs `E.catch` \(SomeException _) ->
+      throwIO ConnectionClosedByPeer
 
 -- | Run an 'Application' on the given port.
 -- This calls 'runSettings' with 'defaultSettings'.
