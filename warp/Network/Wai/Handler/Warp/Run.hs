@@ -62,7 +62,7 @@ socketConnection :: Settings -> Socket -> IO Connection
 socketConnection set s = do
     bufferPool <- newBufferPool
     writeBuf <- allocateBuffer bufferSize
-    let sendall = Sock.sendAll s
+    let sendall = sendAll' s
     isH2 <- newIORef False -- HTTP/1.x
     return Connection {
         connSendMany = Sock.sendMany s
@@ -87,6 +87,9 @@ socketConnection set s = do
       , connBufferSize = bufferSize
       , connHTTP2 = isH2
       }
+  where
+    sendAll' sock bs = Sock.sendAll sock bs `E.catch` \(SomeException _) ->
+      throwIO ConnectionClosedByPeer
 
 -- | Run an 'Application' on the given port.
 -- This calls 'runSettings' with 'defaultSettings'.
